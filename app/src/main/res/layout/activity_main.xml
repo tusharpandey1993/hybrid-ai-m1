@@ -1,0 +1,31 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="20dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/app_name" android:textSize="24sp"
+            android:accessibilityHeading="true" />
+        <EditText android:id="@+id/question" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="80dp"
+            android:hint="@string/question_hint" android:inputType="textMultiLine|textCapSentences"
+            android:gravity="top" android:maxLength="4097" android:minLines="3"
+            android:importantForAutofill="no" />
+        <CheckBox android:id="@+id/cloud_allowed" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="48dp"
+            android:text="@string/allow_cloud" />
+        <CheckBox android:id="@+id/budget_enabled" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="48dp"
+            android:text="@string/budget_enabled" />
+        <CheckBox android:id="@+id/offline" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="48dp"
+            android:text="@string/offline" />
+        <Button android:id="@+id/submit" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="48dp"
+            android:text="@string/submit" />
+        <TextView android:id="@+id/result" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="20dp"
+            android:textSize="18sp" android:textIsSelectable="true"
+            android:accessibilityLiveRegion="polite" />
+    </LinearLayout>
+</ScrollView>

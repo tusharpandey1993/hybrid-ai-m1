@@ -1,0 +1,9 @@
+.gradle/
+.kotlin/
+**/build/
+local.properties
+.idea/
+models/
+app/libs/sherpa-onnx-*.aar
+app/src/main/assets/vad/silero_vad.onnx
+app/src/main/assets/stt/

@@ -1,0 +1,16 @@
+Sherpa-ONNX Android runtime v1.13.8
+Copyright (c) 2023 Xiaomi Corporation. Licensed under Apache-2.0.
+Source and license: https://github.com/k2-fsa/sherpa-onnx
+
+Silero VAD ONNX model
+Silero Team. Licensed under MIT.
+Source: https://github.com/snakers4/silero-vad
+The ONNX model is distributed by sherpa-onnx at:
+https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx
+
+Streaming Zipformer English 20M ONNX model
+Exported from desh2608/icefall-asr-librispeech-pruned-transducer-stateless7-streaming-small.
+Licensed under Apache-2.0. Distributed by sherpa-onnx at:
+https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17.tar.bz2
+
+See Apache-2.0.txt and Silero-VAD-MIT.txt for full license texts.

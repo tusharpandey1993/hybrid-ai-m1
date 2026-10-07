@@ -1,0 +1,34 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/gliner_root" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="20dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/gliner_title" android:textSize="24sp"
+            android:accessibilityHeading="true" />
+        <TextView android:id="@+id/gliner_status" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="12dp"
+            android:accessibilityLiveRegion="polite" />
+        <EditText android:id="@+id/gliner_question" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="100dp"
+            android:hint="@string/question_hint" android:inputType="textMultiLine|textCapSentences"
+            android:gravity="top" android:maxLength="4097" android:minLines="3"
+            android:importantForAutofill="no" />
+        <Button android:id="@+id/gliner_submit" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="48dp"
+            android:enabled="false" android:text="@string/classify" />
+        <Button android:id="@+id/gliner_retry" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="48dp"
+            android:enabled="false" android:text="@string/retry_model" />
+        <TextView android:id="@+id/gliner_result" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="20dp"
+            android:textSize="16sp" android:textIsSelectable="true"
+            android:accessibilityLiveRegion="polite" />
+        <Button android:id="@+id/open_calculator" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="48dp"
+            android:layout_marginTop="20dp" android:text="@string/open_calculator" />
+        <Button android:id="@+id/open_voice_lab" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="48dp"
+            android:text="@string/voice_lab_title" android:drawableStart="@android:drawable/ic_btn_speak_now" />
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,139 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/voice_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:accessibilityHeading="true"
+            android:text="@string/voice_lab_title"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/audio_permission"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp" />
+
+        <TextView
+            android:id="@+id/audio_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:accessibilityLiveRegion="polite"
+            android:text="@string/audio_idle"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/vad_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:accessibilityLiveRegion="polite"
+            android:text="@string/vad_loading"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/vad_stats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/vad_stats_initial"
+            android:textIsSelectable="true" />
+
+        <TextView
+            android:id="@+id/stt_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:accessibilityLiveRegion="polite"
+            android:text="@string/stt_partial"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/stt_transcript"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:minHeight="48dp"
+            android:textIsSelectable="true" />
+
+        <TextView
+            android:id="@+id/stt_stats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/stt_stats_initial"
+            android:textIsSelectable="true" />
+
+        <TextView
+            android:id="@+id/conversation_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:accessibilityLiveRegion="polite"
+            android:text="@string/conversation_state_initial" />
+
+        <TextView
+            android:id="@+id/tts_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/tts_initializing" />
+
+        <Button
+            android:id="@+id/tts_speak"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:minHeight="48dp"
+            android:text="@string/tts_speak" />
+
+        <Button
+            android:id="@+id/tts_stop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:minHeight="48dp"
+            android:text="@string/tts_stop" />
+
+        <ProgressBar
+            android:id="@+id/audio_amplitude"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:contentDescription="@string/audio_peak"
+            android:max="1000" />
+
+        <Button
+            android:id="@+id/audio_start"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableStart="@android:drawable/ic_btn_speak_now"
+            android:minHeight="48dp"
+            android:text="@string/audio_start" />
+
+        <Button
+            android:id="@+id/audio_stop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:minHeight="48dp"
+            android:text="@string/audio_stop" />
+
+        <TextView
+            android:id="@+id/audio_stats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textIsSelectable="true"
+            android:textSize="16sp" />
+    </LinearLayout>
+</ScrollView>
