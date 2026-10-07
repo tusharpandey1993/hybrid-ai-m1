@@ -22,28 +22,43 @@ class ConversationController {
             }
             is ConversationEvent.PartialTranscript -> withTurn(context, event.threadId, event.turnId) {
                 if (!context.userTurnOpen) ignored(context) else ConversationTransition(
-                    context.copy(partialTranscript = event.text,
+                    context.copy(partialTranscript = event.transcript.text,
                         interruptionTranscript = if (context.response != null || context.suspendedResponse != null) {
-                            event.text
+                            event.transcript.text
                         } else context.interruptionTranscript))
             }
             is ConversationEvent.UserTurnCommitted -> withTurn(context, event.threadId, event.turnId) {
                 if (!context.userTurnOpen) ignored(context) else ConversationTransition(context.copy(
                     userTurnOpen = false,
-                    committedTranscript = event.text,
-                    partialTranscript = event.text,
+                    committedTranscript = event.transcript.text,
+                    partialTranscript = event.transcript.text,
                     turnType = null,
                     interruptionTranscript = if (context.response != null || context.suspendedResponse != null) {
-                        event.text
+                        event.transcript.text
                     } else context.interruptionTranscript,
                     state = if (context.response != null) ConversationState.TEMPORARILY_PAUSED
                         else ConversationState.THINKING
                 ))
             }
+            is ConversationEvent.FalseInterruptionDetected -> withTurn(context, event.threadId, event.turnId) {
+                if (context.state != ConversationState.TEMPORARILY_PAUSED || context.response == null) {
+                    ignored(context)
+                } else ConversationTransition(context.copy(
+                    state = ConversationState.ASSISTANT_SPEAKING,
+                    userTurnOpen = false,
+                    partialTranscript = "",
+                    committedTranscript = null,
+                    turnType = null,
+                    interruptionTranscript = "",
+                    playbackEpoch = context.playbackEpoch + 1
+                ), listOf(ConversationAction.CONTINUE))
+            }
             is ConversationEvent.TurnClassified -> withTurn(context, event.threadId, event.turnId) {
                 classify(context, event.type)
             }
             is ConversationEvent.AssistantResponseReady -> responseReady(context, event.response)
+            is ConversationEvent.AssistantDemoResponseReady ->
+                demoResponseReady(context, event.response)
             is ConversationEvent.TtsStarted -> withPlayback(context, event.responseId, event.playbackEpoch) {
                 if (context.state !in setOf(ConversationState.THINKING, ConversationState.ASSISTANT_SPEAKING)) {
                     ignored(context)
@@ -135,7 +150,11 @@ class ConversationController {
         }
     }
 
-    private fun responseReady(context: ConversationContext, response: AssistantResponse): ConversationTransition {
+    private fun responseReady(
+        context: ConversationContext,
+        response: AssistantResponse,
+        allowUnclassifiedTurn: Boolean = false
+    ): ConversationTransition {
         if (response.threadId != context.threadId || response.turnId != context.turnId) {
             return ignored(context, EventDisposition.IGNORED_STALE)
         }
@@ -145,11 +164,36 @@ class ConversationController {
             setOf(TurnType.QUESTION, TurnType.COMMAND, TurnType.NEW_TOPIC, TurnType.CLARIFICATION)
         val awaitingClarification = context.state == ConversationState.INTERRUPTED &&
             context.turnType == TurnType.CLARIFICATION
-        if ((!introduction && !awaitingAnswer && !awaitingClarification) || context.response != null) {
+        val awaitingUnclassifiedTranscript = allowUnclassifiedTurn &&
+            context.state == ConversationState.THINKING &&
+            context.committedTranscript != null && context.turnType == null
+        if ((!introduction && !awaitingAnswer && !awaitingClarification && !awaitingUnclassifiedTranscript) ||
+            context.response != null) {
             return ignored(context)
         }
         return ConversationTransition(context.copy(state = ConversationState.THINKING,
             response = response, playbackEpoch = context.playbackEpoch + 1))
+    }
+
+    private fun demoResponseReady(
+        context: ConversationContext,
+        response: AssistantResponse
+    ): ConversationTransition {
+        if (response.threadId != context.threadId || response.turnId != context.turnId) {
+            return ignored(context, EventDisposition.IGNORED_STALE)
+        }
+        if (context.state == ConversationState.IDLE) return ignored(context)
+        return ConversationTransition(context.copy(
+            state = ConversationState.THINKING,
+            userTurnOpen = false,
+            partialTranscript = "",
+            committedTranscript = null,
+            interruptionTranscript = "",
+            turnType = null,
+            response = response,
+            suspendedResponse = null,
+            playbackEpoch = context.playbackEpoch + 1
+        ))
     }
 
     private fun reset(context: ConversationContext, state: ConversationState) =

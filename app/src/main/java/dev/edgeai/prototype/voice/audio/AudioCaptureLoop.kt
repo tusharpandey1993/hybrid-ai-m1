@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 
 interface PcmRecorder {
     val sampleRate: Int
+    val audioSessionId: Int? get() = null
     val routeType: Int?
     val isSilenced: Boolean
     fun start()
@@ -35,7 +36,8 @@ class AudioCaptureLoop(
     private val factory: () -> PcmRecorder,
     private val permissionGranted: () -> Boolean,
     private val foreground: () -> Boolean,
-    private val bus: AudioFrameBus = AudioFrameBus()
+    private val bus: AudioFrameBus = AudioFrameBus(),
+    private val processingController: AudioProcessingController? = null
 ) : AudioInput {
     private val mutableState = MutableStateFlow(AudioCaptureState())
     override val state = mutableState.asStateFlow()
@@ -87,6 +89,7 @@ class AudioCaptureLoop(
             if (recorder.sampleRate != AudioFrame.SAMPLE_RATE) {
                 throw AudioCaptureException(CaptureFailure.FORMAT, message = "Unsupported capture sample rate")
             }
+            recorder.audioSessionId?.let { processingController?.attach(it) }
             recorder.start()
             mutableState.update { it.copy(status = CaptureStatus.CAPTURING, sampleRate = recorder.sampleRate) }
             reason = CaptureFailure.READ
@@ -141,6 +144,12 @@ class AudioCaptureLoop(
         } finally {
             try {
                 recorder?.stop()
+            } catch (error: Exception) {
+                if (failure == null) { failure = error; reason = CaptureFailure.RELEASE }
+                else failure.addSuppressed(error)
+            }
+            try {
+                processingController?.release()
             } catch (error: Exception) {
                 if (failure == null) { failure = error; reason = CaptureFailure.RELEASE }
                 else failure.addSuppressed(error)

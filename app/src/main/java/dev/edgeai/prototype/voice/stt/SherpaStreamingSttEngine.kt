@@ -8,12 +8,16 @@ import com.k2fsa.sherpa.onnx.OnlineRecognizerConfig
 import com.k2fsa.sherpa.onnx.OnlineStream
 import com.k2fsa.sherpa.onnx.OnlineTransducerModelConfig
 import dev.edgeai.prototype.voice.audio.AudioFrame
+import dev.edgeai.prototype.voice.conversation.UserTranscript
 
 data class SttUpdate(
-    val text: String,
+    val transcript: UserTranscript?,
     val isFinal: Boolean,
     val inferenceMillis: Double
 )
+
+internal fun transcriptFromStt(text: String): UserTranscript? =
+    text.takeIf { it.isNotBlank() }?.let(::UserTranscript)
 
 class SherpaStreamingSttEngine(assetManager: AssetManager) : AutoCloseable {
     private val recognizer = OnlineRecognizer(
@@ -59,7 +63,7 @@ class SherpaStreamingSttEngine(assetManager: AssetManager) : AutoCloseable {
         val isFinal = recognizer.isEndpoint(stream)
         val inferenceMillis = (System.nanoTime() - startedAt) / 1_000_000.0
         if (isFinal) recognizer.reset(stream)
-        return SttUpdate(result.text, isFinal, inferenceMillis)
+        return SttUpdate(transcriptFromStt(result.text), isFinal, inferenceMillis)
     }
 
     override fun close() {

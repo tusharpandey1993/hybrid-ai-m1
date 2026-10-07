@@ -129,9 +129,10 @@ class VadDeviceTest {
                 val update = engine.accept(frame(4, sequence, pcm))
                 maxInferenceMillis = maxOf(maxInferenceMillis, update.inferenceMillis)
                 sawFinal = sawFinal || update.isFinal
-                if (update.text.isNotBlank()) {
+                val transcript = update.transcript?.text.orEmpty()
+                if (transcript.isNotBlank()) {
                     if (firstTextFrame < 0) firstTextFrame = sequence
-                    text = update.text
+                    text = transcript
                 }
             }
         } finally {

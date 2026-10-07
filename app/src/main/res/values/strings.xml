@@ -39,6 +39,8 @@
     <string name="audio_capturing">Capturing</string>
     <string name="audio_stopping">Stopping microphone</string>
     <string name="audio_error">Capture failed</string>
+    <string name="audio_processing_initial">Processing: initializing</string>
+    <string name="audio_processing_format">Source: %1$s | Audio session: %2$s\nAEC: available %3$b, attached %4$b, enabled %5$b\nNoise suppression: available %6$b, attached %7$b, enabled %8$b</string>
     <string name="audio_permission_needed">Microphone permission not granted</string>
     <string name="audio_permission_granted">Microphone permission granted</string>
     <string name="audio_peak">Peak amplitude</string>
@@ -59,6 +61,14 @@
     <string name="stt_no_text">No speech recognized yet.</string>
     <string name="stt_stats_initial">Frames processed: 0</string>
     <string name="stt_stats_format">Frames processed: %1$d\nLast decode: %2$.2f ms\nMax decode: %3$.2f ms</string>
+    <string name="self_speech_initial">Self-speech similarity: --</string>
+    <string name="self_speech_format">Self-speech similarity: %1$.2f\nSignal: %2$s</string>
+    <string name="self_speech_likely">Likely playback leakage (signal only)</string>
+    <string name="self_speech_not_likely">No strong playback match</string>
+    <string name="assistant_response_initial">Assistant response: none</string>
+    <string name="assistant_response_format">Assistant response (turn %1$d):\n%2$s</string>
+    <string name="interruption_initial">Interruption: NONE</string>
+    <string name="interruption_format">Audio activity: %1$s\nPlayback suppressed: %2$b\nFalse playback suppressions: %3$d | Transcript candidates: %4$d</string>
     <string name="conversation_state_initial">Conversation: LISTENING - Turn 0</string>
     <string name="conversation_state_format">Conversation: %1$s - Turn %2$d</string>
     <string name="tts_initializing">TTS: initializing</string>
@@ -70,5 +80,5 @@
     <string name="tts_stop_call_format">\nTTS stop() call: %1$.2f ms (not audible-suppression latency)</string>
     <string name="tts_speak">Speak test passage</string>
     <string name="tts_stop">Stop speech</string>
-    <string name="tts_demo_text">This is a short test of the on-device voice conversation lab. The microphone is active while this sentence is spoken. The voice activity detector runs first, and it should stop playback as soon as a person begins speaking. Transcription and conversation handling happen only after that fast interruption signal. This demo is intentionally longer than a short sentence so there is time to test an interruption. The local speech tools run on the phone, and this sample does not call a network service.</string>
+    <string name="tts_demo_text">This is a test passage for the on-device voice conversation lab. The microphone remains active while this response is spoken. Voice activity is treated as a potential interruption, and playback is temporarily suppressed while transcription continues. The assistant response remains available for recovery if the speech event was a false alarm. This sample runs locally and does not call a network service.</string>
 </resources>

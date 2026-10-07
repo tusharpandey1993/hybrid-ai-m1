@@ -15,7 +15,7 @@ class ConversationControllerTest {
 
     private fun committedInterruption(text: String): ConversationContext {
         val paused = controller.transition(speaking, ConversationEvent.SpeechStarted("main", 41)).context
-        return controller.transition(paused, ConversationEvent.UserTurnCommitted("main", 41, text)).context
+        return controller.transition(paused, ConversationEvent.UserTurnCommitted("main", 41, UserTranscript(text))).context
     }
 
     @Test fun speechStartPausesImmediatelyWithoutClassification() {
@@ -88,7 +88,7 @@ class ConversationControllerTest {
             ConversationEvent.SpeechStarted("main", 41))
         assertEquals(EventDisposition.ACCEPTED, resumed.disposition)
         val corrected = controller.transition(resumed.context,
-            ConversationEvent.UserTurnCommitted("main", 41, "but what if the model is too large?"))
+            ConversationEvent.UserTurnCommitted("main", 41, UserTranscript("but what if the model is too large?")))
         val classified = controller.transition(corrected.context,
             ConversationEvent.TurnClassified("main", 41, TurnType.QUESTION))
         assertEquals(listOf(ConversationAction.CANCEL, ConversationAction.ANSWER), classified.actions)
@@ -99,6 +99,38 @@ class ConversationControllerTest {
         val late = controller.transition(paused, ConversationEvent.TtsCompleted("original", 3))
         assertEquals(EventDisposition.IGNORED_STALE, late.disposition)
         assertEquals(paused, late.context)
+    }
+
+    @Test fun falseInterruptionResumesPreservedAssistantResponse() {
+        val paused = controller.transition(speaking, ConversationEvent.SpeechStarted("main", 41)).context
+        val falseInterruption = controller.transition(paused,
+            ConversationEvent.FalseInterruptionDetected("main", 41))
+
+        assertEquals(ConversationState.ASSISTANT_SPEAKING, falseInterruption.context.state)
+        assertEquals(listOf(ConversationAction.CONTINUE), falseInterruption.actions)
+        assertEquals(original, falseInterruption.context.response)
+        assertEquals(41, falseInterruption.context.turnId)
+        assertEquals("", falseInterruption.context.partialTranscript)
+    }
+
+    @Test fun demoPassageCanBeSpokenAgainAfterVADTemporarilyPausesPreviousPassage() {
+        val paused = controller.transition(speaking,
+            ConversationEvent.SpeechStarted("main", 41)).context
+        val replacement = AssistantResponse("main", "demo-2", 41, "Test passage again.")
+
+        val ready = controller.transition(paused, ConversationEvent.AssistantDemoResponseReady(replacement))
+        assertEquals(EventDisposition.ACCEPTED, ready.disposition)
+        assertEquals(ConversationState.THINKING, ready.context.state)
+        assertEquals(replacement, ready.context.response)
+        assertNull(ready.context.suspendedResponse)
+        assertEquals(0, ready.context.response?.resumePosition)
+
+        val started = controller.transition(ready.context,
+            ConversationEvent.TtsStarted(replacement.responseId, ready.context.playbackEpoch))
+        assertEquals(ConversationState.ASSISTANT_SPEAKING, started.context.state)
+        assertEquals(EventDisposition.IGNORED_STALE,
+            controller.transition(started.context,
+                ConversationEvent.TtsCompleted(original.responseId, speaking.playbackEpoch)).disposition)
     }
 
     @Test fun preparedButUnspokenResponseIsCancelledRatherThanPaused() {
@@ -124,8 +156,8 @@ class ConversationControllerTest {
 
     @Test fun partialCorrectionsReplaceTextAndDoNotClassify() {
         val paused = controller.transition(speaking, ConversationEvent.SpeechStarted("main", 41)).context
-        val first = controller.transition(paused, ConversationEvent.PartialTranscript("main", 41, "what is gli")).context
-        val corrected = controller.transition(first, ConversationEvent.PartialTranscript("main", 41, "what is GLiNER"))
+        val first = controller.transition(paused, ConversationEvent.PartialTranscript("main", 41, UserTranscript("what is gli"))).context
+        val corrected = controller.transition(first, ConversationEvent.PartialTranscript("main", 41, UserTranscript("what is GLiNER")))
         assertEquals("what is GLiNER", corrected.context.partialTranscript)
         assertNull(corrected.context.turnType)
         assertEquals(emptyList<ConversationAction>(), corrected.actions)
@@ -225,7 +257,7 @@ class ConversationControllerTest {
         var cases = 0
         canonicalStates().forEach { (state, sample) ->
             val context = if (state == ConversationState.TEMPORARILY_PAUSED) {
-                controller.transition(sample, ConversationEvent.UserTurnCommitted("main", 41, "turn text")).context
+                controller.transition(sample, ConversationEvent.UserTurnCommitted("main", 41, UserTranscript("turn text"))).context
             } else sample
             TurnType.entries.forEach { type ->
                 val wanted = when (state) {
@@ -285,7 +317,7 @@ class ConversationControllerTest {
         val ready = controller.transition(first, ConversationEvent.AssistantResponseReady(answer)).context
         val speakingAnswer = controller.transition(ready, ConversationEvent.TtsStarted(answer.responseId, ready.playbackEpoch)).context
         val paused = controller.transition(speakingAnswer, ConversationEvent.SpeechStarted("main", 42)).context
-        val committed = controller.transition(paused, ConversationEvent.UserTurnCommitted("main", 42, "What is precision?")).context
+        val committed = controller.transition(paused, ConversationEvent.UserTurnCommitted("main", 42, UserTranscript("What is precision?"))).context
         val result = controller.transition(committed, ConversationEvent.TurnClassified("main", 42, TurnType.CLARIFICATION))
         assertEquals(EventDisposition.REJECTED_NESTED_CLARIFICATION, result.disposition)
         assertEquals(listOf(ConversationAction.KEEP_LISTENING), result.actions)
@@ -297,6 +329,9 @@ class ConversationControllerTest {
         val pending = canonicalStates().getValue(ConversationState.THINKING)
         val answer = AssistantResponse("main", "answer", 41, "New answer.")
         assertIgnored(pending, ConversationEvent.AssistantResponseReady(answer), EventDisposition.IGNORED_INVALID_STATE)
+        val demo = controller.transition(pending, ConversationEvent.AssistantDemoResponseReady(answer))
+        assertEquals(EventDisposition.ACCEPTED, demo.disposition)
+        assertEquals(answer, demo.context.response)
         val classified = controller.transition(pending, ConversationEvent.TurnClassified("main", 41, TurnType.QUESTION)).context
         val ready = controller.transition(classified, ConversationEvent.AssistantResponseReady(answer)).context
         assertEquals(answer, ready.response)
@@ -307,7 +342,7 @@ class ConversationControllerTest {
 
     @Test fun duplicateCommitAndClassificationDoNotRepeatActions() {
         val committed = committedInterruption("yeah")
-        assertIgnored(committed, ConversationEvent.UserTurnCommitted("main", 41, "corrected"),
+        assertIgnored(committed, ConversationEvent.UserTurnCommitted("main", 41, UserTranscript("corrected")),
             EventDisposition.IGNORED_INVALID_STATE)
         val event = ConversationEvent.TurnClassified("main", 41, TurnType.BACKCHANNEL)
         val resumed = controller.transition(committed, event).context
@@ -319,8 +354,8 @@ class ConversationControllerTest {
             listOf(
                 ConversationEvent.SpeechStarted("main", 39),
                 ConversationEvent.SpeechEnded("main", 39),
-                ConversationEvent.PartialTranscript("main", 39, "stale"),
-                ConversationEvent.UserTurnCommitted("main", 39, "stale"),
+                ConversationEvent.PartialTranscript("main", 39, UserTranscript("stale")),
+                ConversationEvent.UserTurnCommitted("main", 39, UserTranscript("stale")),
                 ConversationEvent.TurnClassified("main", 39, TurnType.STOP),
                 ConversationEvent.SpeechStarted("foreign", 42),
                 ConversationEvent.TurnClassified("foreign", 41, TurnType.STOP),
@@ -351,7 +386,7 @@ class ConversationControllerTest {
         expectInvalid { ConversationContext("main", turnId = 1, response = original) }
         expectInvalid { ConversationContext("foreign", turnId = 40, response = original) }
         expectInvalid { ConversationContext("main", turnId = 1, userTurnOpen = true, committedTranscript = "text") }
-        expectInvalid { ConversationEvent.UserTurnCommitted("main", 1, " ") }
+        expectInvalid { ConversationEvent.UserTurnCommitted("main", 1, UserTranscript(" ")) }
     }
 
     @Test fun initialAssistantResponseAndNormalPlaybackCompletionAreSupported() {
@@ -378,7 +413,7 @@ class ConversationControllerTest {
         val root = java.io.File(project, "app/src/main/java/dev/edgeai/prototype/voice")
         val sources = listOf(java.io.File(root, "conversation"), java.io.File(root, "turn"))
             .flatMap { folder -> folder.walkTopDown().filter { it.extension == "kt" }.toList() }
-        assertEquals(6, sources.size)
+        assertEquals(9, sources.size)
         sources.forEach { source ->
             val imports = source.readLines().filter { it.startsWith("import ") }
             assertTrue(source.name, imports.all { it == "import dev.edgeai.prototype.voice.turn.TurnType" })
@@ -427,8 +462,8 @@ class ConversationControllerTest {
         ConversationEvent.StartListening,
         ConversationEvent.SpeechStarted("main", 42),
         ConversationEvent.SpeechEnded("main", 41),
-        ConversationEvent.PartialTranscript("main", 41, "what"),
-        ConversationEvent.UserTurnCommitted("main", 41, "what"),
+        ConversationEvent.PartialTranscript("main", 41, UserTranscript("what")),
+        ConversationEvent.UserTurnCommitted("main", 41, UserTranscript("what")),
         ConversationEvent.TurnClassified("main", 41, TurnType.BACKCHANNEL),
         ConversationEvent.AssistantResponseReady(AssistantResponse("main", "new", 41, "New answer.")),
         ConversationEvent.TtsStarted("original", 4),

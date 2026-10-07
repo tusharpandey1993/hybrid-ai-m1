@@ -24,6 +24,7 @@ import dev.edgeai.prototype.voice.tts.AndroidTtsSynthesizer
 import dev.edgeai.prototype.voice.tts.SpeechSynthesisStatus
 import dev.edgeai.prototype.voice.vad.SherpaSileroVadEngine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
 
 class VoiceLabActivity : ComponentActivity() {
     private val audio by lazy { AndroidAudioInput.get(applicationContext) }
@@ -71,6 +72,10 @@ class VoiceLabActivity : ComponentActivity() {
         val sttStats = findViewById<TextView>(R.id.stt_stats)
         val conversationStatus = findViewById<TextView>(R.id.conversation_status)
         val ttsStatus = findViewById<TextView>(R.id.tts_status)
+        val audioProcessingStatus = findViewById<TextView>(R.id.audio_processing_status)
+        val selfSpeechStatus = findViewById<TextView>(R.id.self_speech_status)
+        val assistantResponse = findViewById<TextView>(R.id.assistant_response)
+        val interruptionStatus = findViewById<TextView>(R.id.interruption_status)
         val amplitude = findViewById<ProgressBar>(R.id.audio_amplitude)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -133,6 +138,45 @@ class VoiceLabActivity : ComponentActivity() {
                     model.conversationContext.collect { context ->
                         conversationStatus.text = getString(R.string.conversation_state_format,
                             context.state.name, context.turnId)
+                        val response = context.response ?: context.suspendedResponse
+                        assistantResponse.text = response?.let {
+                            getString(R.string.assistant_response_format, it.turnId,
+                                it.text.substring(it.resumePosition))
+                        } ?: getString(R.string.assistant_response_initial)
+                    }
+                }
+                launch {
+                    audio.audioProcessingState.collect { state ->
+                        audioProcessingStatus.text = getString(R.string.audio_processing_format,
+                            audio.audioSourceName,
+                            state.audioSessionId?.toString() ?: getString(R.string.audio_not_measured),
+                            state.aecAvailable, state.aecAttached, state.aecEnabled,
+                            state.noiseSuppressorAvailable, state.noiseSuppressorAttached,
+                            state.noiseSuppressorEnabled)
+                    }
+                }
+                launch {
+                    model.selfSpeechResult.collect { result ->
+                        selfSpeechStatus.text = result?.let {
+                            getString(R.string.self_speech_format, it.similarity,
+                                getString(if (it.likelyPlaybackLeakage) R.string.self_speech_likely
+                                    else R.string.self_speech_not_likely))
+                        } ?: getString(R.string.self_speech_initial)
+                    }
+                }
+                launch {
+                    model.interruptionState.collect { state ->
+                        interruptionStatus.text = getString(R.string.interruption_format,
+                            state.status.name, state.playbackSuppressed,
+                            state.falseInterruptionCount, state.transcriptCandidateCount)
+                    }
+                }
+                launch {
+                    combine(model.ttsState, model.state) { tts, capture ->
+                        tts.status == SpeechSynthesisStatus.READY &&
+                            capture.status == CaptureStatus.CAPTURING
+                    }.collect { canSpeak ->
+                        ttsSpeak.isEnabled = canSpeak
                     }
                 }
                 launch {
@@ -149,8 +193,6 @@ class VoiceLabActivity : ComponentActivity() {
                         state.stopCallMillis?.let { millis ->
                             ttsStatus.append(getString(R.string.tts_stop_call_format, millis))
                         }
-                        ttsSpeak.isEnabled = state.status == SpeechSynthesisStatus.READY &&
-                            audio.state.value.status == CaptureStatus.CAPTURING
                         ttsStop.isEnabled = state.status in setOf(
                             SpeechSynthesisStatus.STARTING, SpeechSynthesisStatus.SPEAKING)
                     }

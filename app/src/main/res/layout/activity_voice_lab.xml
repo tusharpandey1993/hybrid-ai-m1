@@ -33,6 +33,14 @@
             android:textSize="20sp" />
 
         <TextView
+            android:id="@+id/audio_processing_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textIsSelectable="true"
+            android:text="@string/audio_processing_initial" />
+
+        <TextView
             android:id="@+id/vad_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -72,6 +80,31 @@
             android:layout_height="wrap_content"
             android:text="@string/stt_stats_initial"
             android:textIsSelectable="true" />
+
+        <TextView
+            android:id="@+id/self_speech_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textIsSelectable="true"
+            android:text="@string/self_speech_initial" />
+
+        <TextView
+            android:id="@+id/assistant_response"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:textIsSelectable="true"
+            android:text="@string/assistant_response_initial" />
+
+        <TextView
+            android:id="@+id/interruption_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:accessibilityLiveRegion="polite"
+            android:text="@string/interruption_initial" />
 
         <TextView
             android:id="@+id/conversation_status"

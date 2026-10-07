@@ -3,6 +3,9 @@ package dev.edgeai.prototype.voice.session
 import dev.edgeai.prototype.voice.conversation.ConversationContext
 import dev.edgeai.prototype.voice.conversation.ConversationController
 import dev.edgeai.prototype.voice.conversation.ConversationEvent
+import dev.edgeai.prototype.voice.conversation.ConversationTransition
+import dev.edgeai.prototype.voice.conversation.UserTranscript
+import dev.edgeai.prototype.voice.conversation.AssistantResponse
 
 class VoiceConversationSession(threadId: String) {
     private val controller = ConversationController()
@@ -15,6 +18,22 @@ class VoiceConversationSession(threadId: String) {
 
     fun startListening() {
         apply(ConversationEvent.StartListening)
+    }
+
+    fun assistantResponseReady(response: AssistantResponse): Boolean =
+        apply(ConversationEvent.AssistantResponseReady(response)).disposition ==
+            dev.edgeai.prototype.voice.conversation.EventDisposition.ACCEPTED
+
+    fun assistantDemoResponseReady(response: AssistantResponse): Boolean =
+        apply(ConversationEvent.AssistantDemoResponseReady(response)).disposition ==
+            dev.edgeai.prototype.voice.conversation.EventDisposition.ACCEPTED
+
+    fun ttsStarted(responseId: String, playbackEpoch: Long): Boolean =
+        apply(ConversationEvent.TtsStarted(responseId, playbackEpoch)).disposition ==
+            dev.edgeai.prototype.voice.conversation.EventDisposition.ACCEPTED
+
+    fun ttsCompleted(responseId: String, playbackEpoch: Long) {
+        apply(ConversationEvent.TtsCompleted(responseId, playbackEpoch))
     }
 
     fun cancel() {
@@ -30,23 +49,27 @@ class VoiceConversationSession(threadId: String) {
         apply(ConversationEvent.SpeechEnded(context.threadId, context.turnId))
     }
 
-    fun partialTranscript(text: String) {
-        if (text.isNotBlank()) apply(ConversationEvent.PartialTranscript(context.threadId, context.turnId, text))
+    fun partialTranscript(transcript: UserTranscript) {
+        apply(ConversationEvent.PartialTranscript(context.threadId, context.turnId, transcript))
     }
 
-    fun acceptTranscript(text: String, isFinal: Boolean) {
-        if (text.isBlank()) return
-        if (isFinal) commitTranscript(text) else partialTranscript(text)
+    fun acceptTranscript(transcript: UserTranscript, isFinal: Boolean) {
+        if (isFinal) commitTranscript(transcript) else partialTranscript(transcript)
     }
 
-    fun commitTranscript(text: String) {
-        require(text.isNotBlank())
+    fun commitTranscript(transcript: UserTranscript) {
         if (!context.userTurnOpen) speechStarted()
-        partialTranscript(text)
-        apply(ConversationEvent.UserTurnCommitted(context.threadId, context.turnId, text))
+        partialTranscript(transcript)
+        apply(ConversationEvent.UserTurnCommitted(context.threadId, context.turnId, transcript))
     }
 
-    private fun apply(event: ConversationEvent) {
-        context = controller.transition(context, event).context
+    fun falseInterruptionDetected(): Boolean =
+        apply(ConversationEvent.FalseInterruptionDetected(context.threadId, context.turnId)).actions
+            .contains(dev.edgeai.prototype.voice.conversation.ConversationAction.CONTINUE)
+
+    private fun apply(event: ConversationEvent): ConversationTransition {
+        val transition = controller.transition(context, event)
+        context = transition.context
+        return transition
     }
 }
