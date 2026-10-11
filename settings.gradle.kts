@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "HybridAiMilestone1"
 include(":app")
+include(":pickleball-umpire")
